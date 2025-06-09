@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL前缀重定向器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>URL前缀重定向器</h1>
+      <div class="header-controls">
+        <button id="settingsBtn" class="btn btn-secondary btn-small">⚙️ 设置</button>
+        <button id="addRuleBtn" class="btn btn-primary">
+          <span class="icon">+</span>
+          添加规则
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div id="debugInfo" style="background: #f8f9fa; padding: 10px; margin-bottom: 10px; font-size: 12px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+          <strong>调试信息</strong>
+          <button id="closeDebug" style="border: none; background: none; cursor: pointer;">×</button>
+        </div>
+        <div id="debugMessages"></div>
+      </div>
+      <div id="rulesList" class="rules-list">
+        <!-- Rules will be dynamically inserted here -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Rule Modal -->
+  <div id="ruleModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">添加重定向规则</h2>
+        <button class="close" id="closeModal">&times;</button>
+      </div>
+      
+      <form id="ruleForm" class="modal-body">
+        <div class="form-group">
+          <label for="ruleName">规则名称</label>
+          <input type="text" id="ruleName" placeholder="例如：GitHub重定向" required>
+        </div>
+
+        <div class="form-group">
+          <label for="sourcePrefix">源URL前缀</label>
+          <input type="url" id="sourcePrefix" placeholder="例如：https://github.com" required>
+          <small class="help-text">匹配以此前缀开头的URL</small>
+        </div>
+
+        <div class="form-group">
+          <label for="targetUrl">目标URL</label>
+          <input type="url" id="targetUrl" placeholder="例如：https://gitee.com" required>
+          <small class="help-text">重定向到的目标地址</small>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <label class="checkbox">
+              <input type="checkbox" id="preserveQueryParams" checked>
+              <span class="checkmark"></span>
+              保留原始查询参数
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <label class="checkbox">
+              <input type="checkbox" id="preservePath">
+              <span class="checkmark"></span>
+              保留原始路径
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>查询参数匹配条件</label>
+          <div id="queryMatchContainer">
+            <div class="query-match-row">
+              <input type="text" placeholder="参数名" class="query-key">
+              <select class="query-match-type">
+                <option value="exact">完全匹配</option>
+                <option value="contains">包含</option>
+                <option value="startsWith">开头匹配</option>
+                <option value="endsWith">结尾匹配</option>
+                <option value="exists">存在即可</option>
+                <option value="notExists">不存在</option>
+              </select>
+              <input type="text" placeholder="参数值" class="query-value">
+              <button type="button" class="btn-remove query-remove">×</button>
+            </div>
+          </div>
+          <button type="button" id="addQueryMatchBtn" class="btn btn-secondary btn-small">+ 添加匹配条件</button>
+          <small class="help-text">只有同时满足所有匹配条件的URL才会被重定向</small>
+        </div>
+
+        <div class="form-group">
+          <label>额外查询参数</label>
+          <div id="additionalParamsContainer">
+            <div class="param-row">
+              <input type="text" placeholder="参数名" class="param-key">
+              <input type="text" placeholder="参数值" class="param-value">
+              <button type="button" class="btn-remove param-remove">×</button>
+            </div>
+          </div>
+          <button type="button" id="addParamBtn" class="btn btn-secondary btn-small">+ 添加参数</button>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <label class="checkbox">
+              <input type="checkbox" id="autoCloseTab">
+              <span class="checkmark"></span>
+              到达目标后自动关闭标签页
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" id="closeUrlGroup" style="display: none;">
+          <label for="closeUrl">关闭标签页的触发URL</label>
+          <input type="url" id="closeUrl" placeholder="例如：https://example.com/success">
+          <small class="help-text">当重定向后最终到达此URL时自动关闭标签页</small>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <label class="checkbox">
+              <input type="checkbox" id="ruleEnabled" checked>
+              <span class="checkmark"></span>
+              启用此规则
+            </label>
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" id="cancelBtn" class="btn btn-secondary">取消</button>
+        <button type="submit" form="ruleForm" id="saveBtn" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>扩展设置</h2>
+        <button class="close" id="closeSettingsModal">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="cooldownPeriod">重定向冷却时间（秒）</label>
+          <input type="number" id="cooldownPeriod" value="10" min="1" max="300">
+          <small class="help-text">在此时间内，相同规则不会重复触发重定向，防止循环跳转</small>
+        </div>
+        
+        <div class="form-group">
+          <button type="button" id="clearCooldownBtn" class="btn btn-secondary">清除所有冷却记录</button>
+          <small class="help-text">立即清除所有规则的冷却状态</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="cancelSettingsBtn" class="btn btn-secondary">取消</button>
+        <button type="button" id="saveSettingsBtn" class="btn btn-primary">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 

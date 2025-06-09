@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "URL前缀重定向器",
+  "version": "1.0.0",
+  "description": "基于URL前缀的智能重定向工具，支持保留查询参数和添加新参数",
+  "permissions": [
+    "activeTab",
+    "tabs", 
+    "storage",
+    "declarativeNetRequest",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "URL前缀重定向器"
+  }
+} 

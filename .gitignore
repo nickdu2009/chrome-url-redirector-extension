@@ -1,0 +1,38 @@
+# Node modules (if using any build tools)
+node_modules/
+
+# macOS files
+.DS_Store
+.DS_Store?
+
+# Windows files
+Thumbs.db
+ehthumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Chrome extension build files (if any)
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Package files (if using any build system)
+*.crx
+*.pem 
